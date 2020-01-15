@@ -3,6 +3,13 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 
+
+
+/*Use This To Turn On/Off Pedestrian/Car detection (1 = ON | 0 = OFF)*/
+int pedestrianFunctionality = 1;
+int carFunctionality = 1;
+/********************************/
+
 /***      Set this radio as radio number 0 or 1         ***/
 bool radioNumber = 0;
 
@@ -42,11 +49,48 @@ void setup() {
     //radio.startListening(); //Ask the radio to start listenting
 
 }
+
 void loop(){
 
 }
 
-void SendInformation(int determinationOfObject){
+
+void determineAndSendObject(int ultrasonicReading){ //takes in reading from the ultrasonic sensor and uses it to create a pedestrian or car code
+
+    int sensitivityTreshhold = 0; //Used to update the "Slop" in the sensor readings
+
+    int EndOfStreet_UValue = 0; //End of ultrasonic threshold on street
+    int BeginningOfStreet_UValue=0; //Beginning of the ultrasonic threshold on street
+
+    int EndOfSideWalk_UValue=0; //End of ultrasonic threshold on sidewalk
+    int BeginningOfSideWalk_Uvalue=0; //Beginning of the ultrasonic threshold on sidewalk
+
+    int PedestrianCode = 111; //Code used to determine a pedestrian
+    int CarCode = 222; //Code used to determine a car
+
+    if(((ultrasonicReading > (BeginningOfSideWalk_Uvalue + sensitivityTreshhold)) || (ultrasonicReading <= (EndOfSideWalk_UValue+ sensitivityTreshhold))) || 
+       ((ultrasonicReading > (BeginningOfSideWalk_Uvalue - sensitivityTreshhold)) || (ultrasonicReading <= (EndOfSideWalk_UValue - sensitivityTreshhold)))){ 
+        
+        if(pedestrianFunctionality){ //Is Pedestrian Functionality On? (Change at Top)
+            SendInformation(PedestrianCode);
+        }
+    
+    }else if(((ultrasonicReading >= (BeginningOfStreet_UValue + sensitivityTreshhold)) || (ultrasonicReading <= (EndOfStreet_UValue + sensitivityTreshhold))) || 
+            ((ultrasonicReading > (BeginningOfSideWalk_Uvalue - sensitivityTreshhold)) || (ultrasonicReading <= (EndOfSideWalk_UValue - sensitivityTreshhold)))){ 
+        
+        if(carFunctionality){ //Is Car Functionality On? (Change at Top)
+            SendInformation(CarCode);
+        }
+
+    }else{ //Don't do anything because neither threshold has been broken
+
+    }
+
+
+}
+
+
+void SendInformation(int determinationOfObject){ //send int code from slave to master and looks for an ack
     
     if (role == role_ping_out){
         
