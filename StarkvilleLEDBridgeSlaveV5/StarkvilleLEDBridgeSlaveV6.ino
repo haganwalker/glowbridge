@@ -46,15 +46,15 @@ void loop(){
 
 }
 
-void SendInformation(int distanceReading){
+void SendInformation(int determinationOfObject){
     
     if (role == role_ping_out){
         
         byte gotByte;                          // Initialize a variable for the incoming ACK response
-        byte distancePacket = distanceReading; // Copy the distance data into the distance Byte Packet
+        byte informationPacket = determinationOfObject; // Send the information of the passed in var to the info packet
         radio.stopListening();                 // First, if we are listening, stop listening so we can talk.         
                                                         
-        if ( radio.write(&distancePacket,1) ){ // Send the Distance Packet to the other radio 
+        if ( radio.write(&informationPacket,1) ){ // Send the Distance Packet to the other radio 
             
             serial.println("Successfully Sent Distance Data!");
             
