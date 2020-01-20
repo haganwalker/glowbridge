@@ -184,6 +184,7 @@ void loop() {
     delay(1000);
     UltrasonicDebugMode();
     }
+    
   	// there are probably simpler ways than using many uint32_t timing variables. 
   	// anyway, I hope memory does not become a problem on these devices
   	static uint32_t next_night_check = 0;										// checking if it is night time....
