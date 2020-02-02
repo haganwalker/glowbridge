@@ -63,7 +63,7 @@ void setup() {
   ws2812fx.setCustomShow(myCustomShow);
   ws2812fx.setBrightness(225);
   ws2812fx.setMode(FX_MODE_STATIC);
-  ws2812fx.setSpeed(1000);  //smaller numbers are faster
+  ws2812fx.setSpeed(3000);  //smaller numbers are faster
   ws2812fx.start();
   ws2812fx.setOptions(0, 0x0);
 }
