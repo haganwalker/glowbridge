@@ -38,7 +38,7 @@
 #include <NeoPixelBus.h>
 
 #define LED_PIN    5  // digital pin used to drive the LED strip, (for ESP8266 DMA, must use GPIO3/RX/D9)
-#define LED_COUNT 1260  // number of LEDs on the strip
+#define LED_COUNT 1265  // number of LEDs on the strip
 
 #define TIMER_MS 60000
 
@@ -61,9 +61,9 @@ void setup() {
 
   // set the custom show function
   ws2812fx.setCustomShow(myCustomShow);
-  ws2812fx.setBrightness(225);
+  ws2812fx.setBrightness(255);
   ws2812fx.setMode(FX_MODE_STATIC);
-  ws2812fx.setSpeed(3000);  //smaller numbers are faster
+  ws2812fx.setSpeed(5000);  //smaller numbers are faster
   ws2812fx.start();
   ws2812fx.setOptions(0, 0x0);
 }
