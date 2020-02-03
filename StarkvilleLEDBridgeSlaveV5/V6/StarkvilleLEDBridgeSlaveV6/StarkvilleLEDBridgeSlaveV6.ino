@@ -16,6 +16,8 @@ int BeginningOfStreet_UValue=0; //Beginning of the ultrasonic threshold on stree
 int EndOfSideWalk_UValue=0; //End of ultrasonic threshold on sidewalk
 int BeginningOfSideWalk_Uvalue=0; //Beginning of the ultrasonic threshold on sidewalk
 
+int UltrasonicPinNumber = 36;
+
 /*********************************************************************/
 void UltrasonicDebugMode(){
 
@@ -24,7 +26,7 @@ void UltrasonicDebugMode(){
         M5.Lcd.clear(BLACK);
         M5.Lcd.setCursor(0, 0);
         M5.Lcd.setTextSize(5);
-        M5.Lcd.println(analogRead(2));
+        M5.Lcd.println(analogRead(36));
 
         if(M5.BtnA.wasReleased()){
             
@@ -40,6 +42,9 @@ void setup() {
 
     Serial.begin(9600);
     M5.begin();
+    
+    pinMode(UltrasonicPinNumber, INPUT);
+
 
   // override the default CS, reset, and IRQ pins (optional)
     LoRa.setPins(); // default set CS, reset, IRQ pin
@@ -66,7 +71,7 @@ void loop(){
   
   }else{
     
-    //determineAndSendObject(1);
+    determineAndSendObject(analogRead(UltrasonicPinNumber));
   
   }
 }
