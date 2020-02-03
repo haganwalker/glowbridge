@@ -1,19 +1,13 @@
-#include <Smoothed.h>
-
 int ultrasonicCheckInterval = 10;
-
-Smoothed <int> mySensor;
 
 void SetupUltrasonicPin(int pinName){
 
-    
-    mySensor.add(analogRead(SENSOR_PIN));
-    mySensor.begin(SMOOTHED_AVERAGE, 10);
+    pinMode(36, INPUT);
 }
 
 int ReadUltrasonic(){
 
-    mySensor.get();
+    return analogRead(36);
 
 }
 
