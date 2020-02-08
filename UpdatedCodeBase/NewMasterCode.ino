@@ -29,6 +29,8 @@ int BeginningOfSideWalk_Uvalue=0; //Beginning of the ultrasonic threshold on sid
 
 int UltrasonicPinNumber = 36;
 
+int ultrasonicFlag = 0;
+
 /*********************************************************************/
 
 void setup() {
@@ -65,6 +67,7 @@ void loop() {
     ws2812fx.service();
   
     M5.update();
+
     if(M5.BtnA.wasReleased()){ //If we want to ender ultrasonic debug mode
   
         delay(1000);
@@ -74,31 +77,40 @@ void loop() {
     
         if(checkForDaytime()){ //if it is daytime according to the sensor
 
-            //TURN OFF LED's
+            ws2812fx.setBrightness(0);
 
         }else{
             now = millis();
+            
+            if(ultrasonicFlag == 0;){                
+                checkUltrasonicSensor(analogRead(UltrasonicPinNumber)); //constantly check the ultrasonic Variable to see if it has been tripped, if tripped, set flag to 1.
+            }
+
             if(now - last_change > TIMER_MS) { //Have we passed the given time
-                
+
                 int packetSize = LoRa.parsePacket(); //Try and Parse for a packet from receiver
 
-                if (packetSize) { //if the sender sent a packet (ultrasonic tripped)
+                if (packetSize) { //if the sender sent a packet (ultrasonic tripped on other end)
 
                     int myModeCount = myModes [random(0,13)];
+                    ws2812fx.setBrightness(255);
                     ws2812fx.setMode(myModeCount);  
                     last_change = now;
+                    ultrasonicFlag = 0; //We dont care that this side ultrasonic tripped 
 
-                }else{ //did not receive a packet so we'll check the ultrasonic Sensor
+                }else{ //did not receive a packet so we'll check the ultrasonic Sensor Flag
 
-                    if(checkUltrasonicSensor(analogRead(UltrasonicPinNumber))){
+                    if(ultrasonicFlag){ //flag value is tripped
                         
                         int myModeCount = myModes [random(0,13)];
+                        ws2812fx.setBrightness(255);
                         ws2812fx.setMode(myModeCount);  
                         last_change = now;
+                        ultrasonicFlag = 0;
 
                     }else{ //ultrasonic value is not tripped
 
-                        //TURN OFF THE LIGHTS
+                        ws2812fx.setBrightness(0);
 
                     }
                 }
@@ -116,24 +128,26 @@ void checkUltrasonicSensor(int ultrasonicReading){ //takes in reading from the u
        ((ultrasonicReading > (BeginningOfSideWalk_Uvalue - sensitivityTreshhold)) || (ultrasonicReading <= (EndOfSideWalk_UValue - sensitivityTreshhold)))){ 
         
         if(pedestrianFunctionality){ //Is Pedestrian Functionality On? (Change at Top)
-            return(1);
+            ultrasonicFlag = 1;
         }
     
     }else if(((ultrasonicReading >= (BeginningOfStreet_UValue + sensitivityTreshhold)) || (ultrasonicReading <= (EndOfStreet_UValue + sensitivityTreshhold))) || 
             ((ultrasonicReading > (BeginningOfSideWalk_Uvalue - sensitivityTreshhold)) || (ultrasonicReading <= (EndOfSideWalk_UValue - sensitivityTreshhold)))){ 
         
         if(carFunctionality){ //Is Car Functionality On? (Change at Top)
-            return(1);
+           ultrasonicFlag = 1;
         }
 
     }else{ //Don't do anything because neither threshold has been broken
-        return 0;
+        
     }
 
 
 }
 
 void UltrasonicDebugMode(){
+
+    delay(2000);
 
     while(1){
         M5.update();
@@ -168,66 +182,5 @@ void myCustomShow(void) {
     memcpy(strip.Pixels(), ws2812fx.getPixels(), strip.PixelsSize());
     strip.Dirty();
     strip.Show();
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void setup() {
-  
-  M5.begin();
-
-  // override the default CS, reset, and IRQ pins (optional)
-  LoRa.setPins(); // default set CS, reset, IRQ pin
-  Serial.println("LoRa Receiver");
-  M5.Lcd.println("LoRa Receiver");
-
-  // frequency in Hz (433E6, 866E6, 915E6)
-  if (!LoRa.begin(433E6)) {
-    Serial.println("Starting LoRa failed!");
-    M5.Lcd.println("Starting LoRa failed!");
-    while (1);
-  }
-
-  // LoRa.setSyncWord(0x69);
-  Serial.println("LoRa init succeeded.");
-  M5.Lcd.println("LoRa init succeeded.");
-}
-
-void loop() {
-  // try to parse packet
-  int packetSize = LoRa.parsePacket();
-  if (packetSize) {
-    // received a packet
-    Serial.print("Received packet: \"");
-    M5.Lcd.print("Received packet: \"");
-
-    // read packet
-    while (LoRa.available()) {
-      char ch = (char)LoRa.read();
-      Serial.print(ch);
-      M5.Lcd.print(ch);
-    }
-
-    // print RSSI of packet
-    Serial.print("\" with RSSI ");
-    Serial.println(LoRa.packetRssi());
-    M5.Lcd.print("\" with RSSI ");
-    M5.Lcd.println(LoRa.packetRssi());
   }
 }
