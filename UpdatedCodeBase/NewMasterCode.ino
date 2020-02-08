@@ -60,7 +60,7 @@ void setup() {
   pinMode(UltrasonicPinNumber, INPUT); //ultrasonic pin
 }
 // might be "bridge friendly" effects
-const uint8_t myModes[] = {3,7,8,11,12,17,18,32,33,36,38,39,42};
+const uint8_t myModes[] = {3,7,8,11,12,17,18,32,33,36,38,39,42,44,54,10,2,15};
 
 void loop() {
   
@@ -92,8 +92,9 @@ void loop() {
 
                 if (packetSize) { //if the sender sent a packet (ultrasonic tripped on other end)
 
-                    int myModeCount = myModes [random(0,13)];
+                    int myModeCount = myModes [random(0,17)];
                     ws2812fx.setBrightness(255);
+                    ws2812fx.setOptions(0, REVERSE);
                     ws2812fx.setMode(myModeCount);  
                     last_change = now;
                     ultrasonicFlag = 0; //We dont care that this side ultrasonic tripped 
@@ -102,7 +103,7 @@ void loop() {
 
                     if(ultrasonicFlag){ //flag value is tripped
                         
-                        int myModeCount = myModes [random(0,13)];
+                        int myModeCount = myModes [random(0,17)];
                         ws2812fx.setBrightness(255);
                         ws2812fx.setMode(myModeCount);  
                         last_change = now;
