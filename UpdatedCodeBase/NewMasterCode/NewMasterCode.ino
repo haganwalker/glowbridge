@@ -27,6 +27,10 @@ int BeginningOfStreet_UValue=0; //Beginning of the ultrasonic threshold on stree
 int EndOfSideWalk_UValue=0; //End of ultrasonic threshold on sidewalk
 int BeginningOfSideWalk_Uvalue=0; //Beginning of the ultrasonic threshold on sidewalk
 
+int pedestrianFunctionality = 1;
+
+int carFunctionality = 1;
+
 int UltrasonicPinNumber = 36;
 
 int ultrasonicFlag = 0;
@@ -48,15 +52,25 @@ void setup() {
   strip.Begin();
   strip.Show();
 
+
+
   // set the custom show function
   ws2812fx.setCustomShow(myCustomShow);
-  ws2812fx.setBrightness(255);
+  ws2812fx.setBrightness(0);
   ws2812fx.setMode(FX_MODE_STATIC);
   ws2812fx.setSpeed(5000);  //smaller numbers are faster
   ws2812fx.start();
   ws2812fx.setOptions(0, 0x0);
 
-  pinmode(2, INPUT); //Light Sensor Pin
+  M5.update();
+  M5.Lcd.clear(BLACK);
+  M5.Lcd.setCursor(0, 0);
+  M5.Lcd.setTextSize(5);
+  M5.Lcd.println("Brightness Set To 0");
+  
+  delay(2000);
+  
+  pinMode(2, INPUT); //Light Sensor Pin
   pinMode(UltrasonicPinNumber, INPUT); //ultrasonic pin
 }
 // might be "bridge friendly" effects
@@ -82,7 +96,7 @@ void loop() {
         }else{
             now = millis();
             
-            if(ultrasonicFlag == 0;){                
+            if(ultrasonicFlag == 0){                
                 checkUltrasonicSensor(analogRead(UltrasonicPinNumber)); //constantly check the ultrasonic Variable to see if it has been tripped, if tripped, set flag to 1.
             }
 
@@ -167,7 +181,7 @@ void UltrasonicDebugMode(){
     }
 }
 
-void checkForDaytime(){
+int checkForDaytime(){
 
     if(digitalRead(2) == HIGH){
         return 0; //Nighttime
