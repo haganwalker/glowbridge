@@ -68,7 +68,7 @@ void setup() {
   ws2812fx.setOptions(0, 0x0);
 }
 // might be "bridge friendly" effects
-const uint8_t myModes[] = {3,7,8,11,12,17,18,32,33,36,38,39,42};
+const uint8_t myModes[] = {3,7,8,11,12,17,18,32,33,36,38,39,42,44,54,10,2,15,20};
 
 void loop() {
   now = millis();
@@ -76,7 +76,7 @@ void loop() {
   ws2812fx.service();
   
   if(now - last_change > TIMER_MS) {
-    int myModeCount = myModes [random(0,13)];
+    int myModeCount = myModes [random(0,18)];
     ws2812fx.setMode(myModeCount);  
     last_change = now;
   }

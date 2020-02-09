@@ -165,19 +165,19 @@ void UltrasonicDebugMode(){
     delay(2000);
 
     while(1){
-        M5.update();
-        M5.Lcd.clear(BLACK);
-        M5.Lcd.setCursor(0, 0);
-        M5.Lcd.setTextSize(5);
-        M5.Lcd.println(analogRead(36));
-
-        if(M5.BtnA.wasReleased()){
-            
-            M5.Lcd.clear(BLACK);
-            break;
-
-        }
-    delay(100);
+//        M5.update();
+//        M5.Lcd.clear(BLACK);
+//        M5.Lcd.setCursor(0, 0);
+//        M5.Lcd.setTextSize(5);
+//        M5.Lcd.println(analogRead(36));
+        Serial.println(analogRead(36));
+//        if(M5.BtnA.wasReleased()){
+//            
+//            M5.Lcd.clear(BLACK);
+//            break;
+//
+//        }
+    delay(10);
     }
 }
 

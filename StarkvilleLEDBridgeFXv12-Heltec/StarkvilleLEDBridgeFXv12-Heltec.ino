@@ -4,7 +4,7 @@
  * Welcome! Chances are, if you found this - it means I did something wrong.
  * Who knew that a light up bridge could be so complicated? On a surface level,
  * this code takes signals from a Maxbotix XL 7070 ultrasonic sensor either on
- * ESP32 master (the device this specific code is running on) or from the ESP32 
+ * ESP32 master (the code this specific code is running on) or from the ESP32 
  * slave device, via LoRa. Once a significant change has been "seen", we cycle
  * through several stages, from fading into a random effect, then fading to 
  * solid white, and finally back to off. The code also has a provision to only
@@ -26,11 +26,15 @@
  */
 
 #include "Arduino.h"
-#include <M5Stack.h>
-#include <M5LoRa.h>
+#include "heltec.h"
 #include <WS2812FX.h>
 #include <NeoPixelBus.h>
 #include <Smoothed.h>
+
+#define BAND    915E6  //you can set band here directly,e.g. 868E6,915E6
+String rssi = "RSSI --";
+String packSize = "--";
+String packet ;
 
 unsigned int counter = 0;
 unsigned int peopleSeen = 0;
@@ -57,25 +61,10 @@ WS2812FX ws2812fx = WS2812FX(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 NeoEsp32I2s0800KbpsMethod dma = NeoEsp32I2s0800KbpsMethod(17, LED_COUNT, 3);
 
 void setup() {
-
-  M5.begin();
-
-  // override the default CS, reset, and IRQ pins (optional)
-  LoRa.setPins(); // default set CS, reset, IRQ pin
-  Serial.println("LoRa Receiver");
-  M5.Lcd.println("LoRa Receiver");
-
-  // frequency in Hz (433E6, 866E6, 915E6)
-  if (!LoRa.begin(433E6)) {
-    Serial.println("Starting LoRa failed!");
-    M5.Lcd.println("Starting LoRa failed!");
-    while (1);
-  }
-
-  // LoRa.setSyncWord(0x69);
-  Serial.println("LoRa init succeeded.");
-  M5.Lcd.println("LoRa init succeeded.");
-
+  Heltec.begin(true /*DisplayEnable Enable*/, true /*Heltec.LoRa Disable*/, true /*Serial Enable*/, true /*PABOOST Enable*/, BAND /*long BAND*/);
+  Heltec.display->flipScreenVertically();
+  Heltec.display->setFont(ArialMT_Plain_16);
+  Heltec.display->clear();
   pinMode(photoResistor, INPUT);
   Serial.begin(115200);
   Serial.println("Starting...");
@@ -90,13 +79,21 @@ void setup() {
   ws2812fx.start();
   ws2812fx.setOptions(0, 0x0);
   
+  randomSeed(analogRead(A0));
+  Heltec.LoRa.setSyncWord(0xF3);
+  Heltec.LoRa.receive();
+  
   mySensor.begin(SMOOTHED_AVERAGE, 10);
   
-  M5.Lcd.print("Wait 5 seconds..");
+  Heltec.display->drawString(0, 0, "Wait 5 seconds..");
+  Heltec.display->display();
   delay(5000); //to allow power to come on before signal is sent.
+  Heltec.display->clear();
   Serial.println("Setup Done...");
-  M5.Lcd.print("Setup Done!");
+  Heltec.display->drawString(0, 0, "Setup Done!");
+  Heltec.display->display();
   delay(3000);
+  Heltec.display->clear();
 }
 
 // states we can have
@@ -199,7 +196,8 @@ void loop() {
 				ws2812fx.setMode(myModeCount);                                    // set a random mode from the ones above 
 				ws2812fx.setBrightness(0);                                        // start at zero brigthness
 				//Serial.println("Motion LEFT");  
-				M5.Lcd.print("Motion LEFT");
+				Heltec.display->drawString(0, 20, "Motion LEFT");
+				Heltec.display->display();
 				//Serial.print("mode is "); Serial.println(ws2812fx.getModeName(ws2812fx.getMode()));
 
 				// now we switch to the first stage:
@@ -210,7 +208,8 @@ void loop() {
 			else {                                                                 // We have motion, but not new motion. Keep going.
 				on_end = now + LIGHT_ON_TIME;                                      // Sensor still triggered --> extend to further ... seconds
 				//Serial.println("Retriggered LEFT");
-				M5.Lcd.print("Retriggered LEFT");
+				Heltec.display->drawString(0, 20, "Retriggered LEFT");
+				Heltec.display->display();
 				if(stage == FADE_OUT) {                                              // hurry, we were fading out already.... lets return to fade white
 					stage = FADE_WHITE;
 					fade_step = now + FADE_WHITE_TIMESTEP;
@@ -226,13 +225,12 @@ void loop() {
 	  
 	  // so it may be worth thinking about limiting the transmissions from the slave....
 	  
-	  int packetSize = LoRa.parsePacket();
+	  int packetSize = Heltec.LoRa.parsePacket();
 
       // If the motion is detected by the Slave Device and sent by LoRa (Right Side of the Bridge)
       
       if (packetSize) {
-        while (LoRa.available()){
-          char ch = (char)LoRa.read();
+        cbk(packetSize);                          
           if(new_motion_detected == false) {                                    // when this is a new motion
               new_motion_detected = true;                                       // we have motion detected
               int myModeCount = myModes [random(0,13)];
@@ -240,26 +238,23 @@ void loop() {
               ws2812fx.setMode(myModeCount);                                    // set a random mode, 
               ws2812fx.setBrightness(0);
               //Serial.println("Motion LoRa");  
-              M5.Lcd.print("Motion LoRa ");
-              M5.Lcd.println(ch);
-              M5.Lcd.print("\" with RSSI ");
-              M5.Lcd.println(LoRa.packetRssi());
+              Heltec.display->drawString(0, 20, "Motion LoRa");
+              Heltec.display->drawString(0, 40, rssi);
+              Heltec.display->display();
               //Serial.print("mode is "); Serial.println(ws2812fx.getModeName(ws2812fx.getMode()));
   
               // now we switch to the first stage:
               stage = FADE_IN;
               fade_step = now + FADE_IN_TIMESTEP;
               anim_running = true;
-            }
           }
-        }
           else {                                                                 // We have motion, but not new motion. Keep going.
           
               on_end = now + LIGHT_ON_TIME;                                     // Sensor still triggered --> extend to further ... seconds
               //Serial.println("Retriggered, LoRa");
-              M5.Lcd.print("Retrig, LoRa ");
-              M5.Lcd.print("\" with RSSI ");
-              M5.Lcd.println(LoRa.packetRssi());
+              Heltec.display->drawString(0, 20, "Retrig, LoRa");
+              Heltec.display->drawString(0, 40, rssi);
+              Heltec.display->display();
               if(stage == FADE_OUT) {                                             // hurry, we were fading out already.... lets return to fade white
                   stage = FADE_WHITE;
                   fade_step = now + FADE_WHITE_TIMESTEP;
@@ -281,9 +276,10 @@ void loop() {
       // ws2812fx.setBrightness(0);
       // stage == OFF;
       //Serial.println("It's Daytime!");
-      M5.Lcd.print("It's Daytime!");
+      Heltec.display->drawString(0, 40, "It's Daytime!");
+      Heltec.display->display();
     }
-  
+  }
 /*  
  *  MAIN CODE: End. This is the end of the main loop. If it is daytime, the else statement above sends
  *  the stage to OFF and the LEDs stay off while it's light outside.
@@ -299,7 +295,8 @@ void loop() {
     switch (stage) {
         case OFF :                                                                  // default stage, not much to do.
             //Serial.println("case is OFF");
-            M5.Lcd.print("Case is OFF");
+            Heltec.display->drawString(0, 0, "Case is OFF");
+            Heltec.display->display();
             if(brightness != 0)                                                     // sanity.... but in case its not 0, we set it to 0
             {
                 ws2812fx.setBrightness(0);
@@ -324,7 +321,8 @@ void loop() {
         break;
         case ANIM :                                                                 // keep the animation running for a while
             //Serial.println("Case is Animation");
-            M5.Lcd.print("Animation");
+            Heltec.display->drawString(0, 0, "Animation");
+            Heltec.display->display();
             if(now > anim_end)
             {
                 anim_running = false;                                               // stop the animation at this frame;
@@ -335,7 +333,8 @@ void loop() {
         break;
         case FADE_WHITE :                                                           // fade to white stage
             //Serial.println("Case is Fade to White");
-            M5.Lcd.print("Fade to White");
+            Heltec.display->drawString(0, 0, "Fade to White");
+            Heltec.display->display();
             if(now > fade_step)
             {
                 fade_step = now + FADE_WHITE_TIMESTEP;                              // next fade step
@@ -359,7 +358,8 @@ void loop() {
         break;
         case ON :                                                                   // stage where plain white is shown for the defined time
             //Serial.println("Case is SOLID White");
-            M5.Lcd.print("Solid White");
+            Heltec.display->drawString(0, 0, "Solid White");
+            Heltec.display->display();
             if(now > on_end)                                                        // not much to do. At the end, switch to FADE OUT
             {
                 stage = FADE_OUT;
@@ -368,7 +368,8 @@ void loop() {
         break;
         case FADE_OUT :  // fade from White to OFF
             //Serial.println("Case is Fade to OFF");
-            M5.Lcd.print("Fade OFF");
+            Heltec.display->drawString(0, 0, "Fade OFF");
+            Heltec.display->display();
             if(now > fade_step)
             {
                 fade_step = now + FADE_OUT_TIMESTEP;                             // next step
@@ -389,8 +390,23 @@ void loop() {
         break;
     }
 
- // Let's clear the display - ehhh. Not sure how to clear the M5Stack yet. Include clear code here if needed.
-  }
+    Heltec.display->clear();                                                    // Let's clear the display
+}
+
+
+void cbk(int packetSize) {
+  packet ="";
+  packSize = String(packetSize,DEC);
+  for (int i = 0; i < packetSize; i++) { packet += (char) Heltec.LoRa.read(); }
+  rssi = "RSSI " + String(Heltec.LoRa.packetRssi(), DEC) ;
+  //Heltec.display->clear();
+  //Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
+  //Heltec.display->setFont(ArialMT_Plain_16);
+  //Heltec.display->drawString(0 , 15 , "Received "+ packSize + " bytes");
+  //Heltec.display->drawStringMaxWidth(0 , 26 , 128, packet);
+  //Heltec.display->drawString(0, 0, rssi);  
+  //Heltec.display->display();
+}
 
 /*
  * This is very important code. It takes the WS2812FX library and "pipes" it to the

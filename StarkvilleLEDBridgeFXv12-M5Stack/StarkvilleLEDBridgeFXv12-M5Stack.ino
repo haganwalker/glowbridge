@@ -40,9 +40,9 @@ Smoothed <int> mySensor;
 
 
 #define LED_COUNT 1260
-#define LED_PIN 3  //DO NOT CHANGE THIS
+#define LED_PIN 5  //DO NOT CHANGE THIS
 
-const int photoResistor = 23;
+const int photoResistor = 2;
 int nightTime = 0;
 
 // Parameter 1 = number of pixels in strip
@@ -54,7 +54,7 @@ int nightTime = 0;
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 WS2812FX ws2812fx = WS2812FX(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
-NeoEsp32I2s0800KbpsMethod dma = NeoEsp32I2s0800KbpsMethod(17, LED_COUNT, 3);
+NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(LED_COUNT, LED_PIN);
 
 void setup() {
 
@@ -69,7 +69,7 @@ void setup() {
   if (!LoRa.begin(433E6)) {
     Serial.println("Starting LoRa failed!");
     M5.Lcd.println("Starting LoRa failed!");
-    while (1);
+    while(1);
   }
 
   // LoRa.setSyncWord(0x69);
@@ -82,7 +82,8 @@ void setup() {
   Serial.println(ESP.getFreeSketchSpace());
   
   ws2812fx.init();
-  dma.Initialize();
+  strip.Begin();
+  strip.Show();
   ws2812fx.setCustomShow(myCustomShow);
   ws2812fx.setBrightness(225);
   ws2812fx.setMode(FX_MODE_STATIC);
@@ -181,16 +182,16 @@ void loop() {
   */
   if(now > next_ultrasonic_read) {
 	next_ultrasonic_read = now + ULTRASONIC_CHECK_INTERVAL;   // doing this here instead of the end provides a more stable interval...
-    
+     Serial.println(nightTime);
 	if(nightTime == LOW) {  // this should normally be HIGH. Can change to LOW for quick debugging.
       
       // If the motion is detected by the Master Device (Left Side of the Bridge)
-      float currentSensorValue = pulseIn(38, HIGH) / 58.0;
+      float currentSensorValue = pulseIn(36, HIGH) / 58.0;
       float inInches = currentSensorValue / 2.54;
       Serial.println(inInches);
       mySensor.add(inInches);
       smoothed = mySensor.get();
-      //Serial.println(smoothed);
+      Serial.println(smoothed);
 	  
 		  if(smoothed > 0 && smoothed < 48){                                   // Roughly 0 to 4ft.
 			if(new_motion_detected == false) {                                    // when this is a new motion
@@ -399,9 +400,10 @@ void loop() {
  * Without this code, nothing else will work.
  */
 void myCustomShow(void) {
-  if(dma.IsReadyToUpdate()) {
-    // copy the ws2812fx pixel data to the dma pixel data
-    memcpy(dma.getPixels(), ws2812fx.getPixels(), dma.getPixelsSize());
-    dma.Update();
+  if(strip.CanShow()) {
+    // copy the WS2812FX pixel data to the NeoPixelBus instance
+    memcpy(strip.Pixels(), ws2812fx.getPixels(), strip.PixelsSize());
+    strip.Dirty();
+    strip.Show();
   }
 }
