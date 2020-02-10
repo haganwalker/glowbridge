@@ -42,9 +42,9 @@ Smoothed <int> mySensor;
 
 
 #define LED_COUNT 1260
-#define LED_PIN 5  //DO NOT CHANGE THIS
+#define LED_PIN 2  //DO NOT CHANGE THIS
 
-const int photoResistor = 2;
+const int photoResistor = 1;
 int nightTime = 0;
 
 // Parameter 1 = number of pixels in strip
@@ -79,6 +79,7 @@ void setup() {
   M5.Lcd.println("LoRa init succeeded.");
 
   pinMode(photoResistor, INPUT);
+  
   Serial.begin(115200);
   Serial.println("Starting...");
   Serial.println(ESP.getFreeSketchSpace());
@@ -247,16 +248,14 @@ void loop() {
   if(now > next_ultrasonic_read) {
 	next_ultrasonic_read = now + ULTRASONIC_CHECK_INTERVAL;   // doing this here instead of the end provides a more stable interval...
      Serial.println(nightTime);
-	if(nightTime == LOW) {  // this should normally be HIGH. Can change to LOW for quick debugging.
+	if(nightTime == HIGH) {  // this should normally be HIGH. Can change to LOW for quick debugging.
       
-      int16_t currentSensorValue = analogRead(36) & 0xFE0;
+      int16_t currentSensorValue = analogRead(35) & 0xFE0;
       mySensor.add(currentSensorValue);
       smoothed = mySensor.get();
-      cm = smoothed / 100;
-      smoothedInches = cm * 0.3937;
-      Serial.println(smoothedInches);
+      Serial.println(smoothed);
 	  
-		  if(smoothed > 0 && smoothed < 48){                                   // Roughly 0 to 4ft.
+		  if(smoothed > 0 && smoothed < 700){                                   // Roughly 0 to 4ft.
 			if(new_motion_detected == false) {                                    // when this is a new motion
 				new_motion_detected = true;                                       // we have motion detected
 				ws2812fx.setMode(random(myModeCount));                                  // set a random mode from the ones above 
