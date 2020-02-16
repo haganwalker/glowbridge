@@ -189,14 +189,14 @@ void loop() {
       smoothed = mySensor.get();
       Serial.println(smoothed);
       
-		  if(smoothed > 0 && smoothed < 600){                                   // Roughly 0 to 4ft.
+		  if(smoothed > 0 && smoothed < 700){                                   // Roughly 0 to 4ft.
 			if(new_motion_detected == false) {                                    // when this is a new motion
 				new_motion_detected = true;                                       // we have motion detected
 				int myModeCount = myModes [random(0,13)];
 				ws2812fx.setMode(myModeCount);                                    // set a random mode from the ones above 
 				ws2812fx.setBrightness(0);                                        // start at zero brigthness
-				//Serial.println("Motion LEFT");  
-				Heltec.display->drawString(0, 20, "Motion LEFT");
+				//Serial.println("Motion MAIN");  
+				Heltec.display->drawString(0, 20, "Motion MAIN");
 				Heltec.display->display();
 				//Serial.print("mode is "); Serial.println(ws2812fx.getModeName(ws2812fx.getMode()));
 
@@ -207,8 +207,8 @@ void loop() {
 			}
 			else {                                                                 // We have motion, but not new motion. Keep going.
 				on_end = now + LIGHT_ON_TIME;                                      // Sensor still triggered --> extend to further ... seconds
-				//Serial.println("Retriggered LEFT");
-				Heltec.display->drawString(0, 20, "Retriggered LEFT");
+				//Serial.println("Retriggered MAIN");
+				Heltec.display->drawString(0, 20, "Retriggered MAIN");
 				Heltec.display->display();
 				if(stage == FADE_OUT) {                                              // hurry, we were fading out already.... lets return to fade white
 					stage = FADE_WHITE;
