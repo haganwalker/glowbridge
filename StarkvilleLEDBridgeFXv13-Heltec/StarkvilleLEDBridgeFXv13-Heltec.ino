@@ -110,8 +110,65 @@ typedef enum stages{
 };
 
 // might be "bridge friendly" effects
-const uint8_t myModes[] = {3,7,8,11,12,17,18,32,33,36,38,39,42};
-
+const uint8_t myModes[] = {
+//    FX_MODE_STATIC                  ,
+//    FX_MODE_BLINK                   ,
+//    FX_MODE_BREATH                  ,
+    FX_MODE_COLOR_WIPE              ,
+//    FX_MODE_COLOR_WIPE_INV          ,
+//    FX_MODE_COLOR_WIPE_REV          ,
+//    FX_MODE_COLOR_WIPE_REV_INV      ,
+//    FX_MODE_COLOR_WIPE_RANDOM       ,
+    FX_MODE_RANDOM_COLOR            ,
+    FX_MODE_SINGLE_DYNAMIC          ,
+    FX_MODE_MULTI_DYNAMIC           ,
+    FX_MODE_RAINBOW                 ,
+    FX_MODE_RAINBOW_CYCLE           ,
+//    FX_MODE_SCAN                    ,
+//    FX_MODE_DUAL_SCAN               ,
+//    FX_MODE_FADE                    ,
+    FX_MODE_THEATER_CHASE           ,
+    FX_MODE_THEATER_CHASE_RAINBOW   ,
+    FX_MODE_RUNNING_LIGHTS          ,
+//    FX_MODE_TWINKLE                 ,
+//    FX_MODE_TWINKLE_RANDOM          ,
+//    FX_MODE_TWINKLE_FADE            ,
+//    FX_MODE_TWINKLE_FADE_RANDOM     ,
+//    FX_MODE_SPARKLE                 ,
+//    FX_MODE_FLASH_SPARKLE           ,
+//    FX_MODE_HYPER_SPARKLE           ,
+//    FX_MODE_STROBE                  ,
+//    FX_MODE_STROBE_RAINBOW          ,
+//    FX_MODE_MULTI_STROBE            ,
+//    FX_MODE_BLINK_RAINBOW           ,
+//    FX_MODE_CHASE_WHITE             ,
+    FX_MODE_CHASE_COLOR             ,
+    FX_MODE_CHASE_RANDOM            ,
+    FX_MODE_CHASE_RAINBOW           ,
+//   FX_MODE_CHASE_FLASH             ,
+//    FX_MODE_CHASE_FLASH_RANDOM      ,
+//    FX_MODE_CHASE_RAINBOW_WHITE     ,
+    FX_MODE_CHASE_BLACKOUT          ,
+    FX_MODE_CHASE_BLACKOUT_RAINBOW  ,
+//    FX_MODE_COLOR_SWEEP_RANDOM      ,
+    FX_MODE_RUNNING_COLOR           ,
+//    FX_MODE_RUNNING_RED_BLUE        ,
+    FX_MODE_RUNNING_RANDOM          ,
+    FX_MODE_LARSON_SCANNER          ,
+//    FX_MODE_COMET                   ,
+//    FX_MODE_FIREWORKS               ,
+//    FX_MODE_FIREWORKS_RANDOM        ,
+    FX_MODE_MERRY_CHRISTMAS         ,
+//    FX_MODE_FIRE_FLICKER            ,
+    FX_MODE_FIRE_FLICKER_SOFT       ,
+//    FX_MODE_FIRE_FLICKER_INTENSE    ,
+//    FX_MODE_CIRCUS_COMBUSTUS        ,
+//    FX_MODE_HALLOWEEN               ,
+    FX_MODE_BICOLOR_CHASE           ,
+    FX_MODE_TRICOLOR_CHASE          ,
+//    FX_MODE_ICU                     
+};
+const uint8_t myModeCount = (sizeof(myModes)/sizeof(myModes[0]));
 /*
  * To change time of the events, edit the numbers below that AREN'T 255. This will change the timeline in MS.
  * To adjust max brightness, scroll down to the FADE_IN and FADE_WHITE stages and look for BRIGHTNESS comments.
@@ -192,8 +249,7 @@ void loop() {
 		  if(smoothed > 0 && smoothed < 700){                                   // Roughly 0 to 4ft.
 			if(new_motion_detected == false) {                                    // when this is a new motion
 				new_motion_detected = true;                                       // we have motion detected
-				int myModeCount = myModes [random(0,13)];
-				ws2812fx.setMode(myModeCount);                                    // set a random mode from the ones above 
+				ws2812fx.setMode(random(myModeCount));                                    // set a random mode from the ones above 
 				ws2812fx.setBrightness(0);                                        // start at zero brigthness
 				//Serial.println("Motion MAIN");  
 				Heltec.display->drawString(0, 20, "Motion MAIN");
@@ -233,9 +289,8 @@ void loop() {
         cbk(packetSize);                          
           if(new_motion_detected == false) {                                    // when this is a new motion
               new_motion_detected = true;                                       // we have motion detected
-              int myModeCount = myModes [random(0,13)];
               ws2812fx.setOptions(0, REVERSE);                                  // reverse the direction if coming from LoRa.
-              ws2812fx.setMode(myModeCount);                                    // set a random mode, 
+              ws2812fx.setMode(random(myModeCount));                                    // set a random mode, 
               ws2812fx.setBrightness(0);
               //Serial.println("Motion LoRa");  
               Heltec.display->drawString(0, 20, "Motion LoRa");
