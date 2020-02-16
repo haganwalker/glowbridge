@@ -1,7 +1,4 @@
-/* This version is for the MB7062 with code for PWM. It's a less than ideal
- * solution because PulseIn is a blocking function...
- * 
- * Welcome! Chances are, if you found this - it means I did something wrong.
+/* Welcome! Chances are, if you found this - it means I did something wrong.
  * Who knew that a light up bridge could be so complicated? On a surface level,
  * this code takes signals from a Maxbotix XL 7070 ultrasonic sensor either on
  * ESP32 master (the code this specific code is running on) or from the ESP32 
@@ -12,7 +9,7 @@
  * light, it turns ON a 3.3V circuit, which pulls pin 23 HIGH. Otherwise, pin
  * 23 is LOW, which sends a command to turn off the LEDs and ignores any 
  * sensor input. This code was written by Hagan Walker (haganwalker@gmail.com)
- * with support from users over at the WS2812FX github repository. A big thanks
+ * with support from users over at the WS2812FX github repository and Landon Casey. A big thanks
  * to them, along with the creators and contributors of the NeoPixelBus library.
  * 
  * Now - here's the sloppy code for the Glo(R) Bridge.
