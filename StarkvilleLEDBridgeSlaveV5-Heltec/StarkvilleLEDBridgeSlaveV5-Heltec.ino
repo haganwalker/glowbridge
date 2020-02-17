@@ -9,6 +9,7 @@
  * master device, this device will not send another message again for at least 10 seconds, 
  * even if someone or something is blocking the sensor. This should keep up well within the
  * FCC rules for 915Mhz transmissions. 
+
   This is a simple example to show the Heltec.LoRa sending data and displaying on the OLED.
 
   The onboard OLED display is SSD1306 driver and I2C interface. In order to make the
@@ -47,7 +48,7 @@ int canBroadcast = false;
 void setup()
 { 
 
-  mySensor.begin(SMOOTHED_AVERAGE, 3);
+  mySensor.begin(SMOOTHED_AVERAGE, 3);                  // We will take the average of 3 readings before outputting the result
   //WIFI Kit series V1 not support Vext control
   Heltec.begin(true /*DisplayEnable Enable*/, true /*Heltec.Heltec.Heltec.LoRa Disable*/, true /*Serial Enable*/, true /*PABOOST Enable*/, BAND /*long BAND*/);
  
@@ -57,7 +58,7 @@ void setup()
   Heltec.display->clear();
   Heltec.display->drawString(0, 0, "Wait 5 seconds..");
   Heltec.display->display();
-  Heltec.LoRa.setSyncWord(0xF3); //to make sure no interference to receiver.
+  Heltec.LoRa.setSyncWord(0xF3);                        //to make sure no interference to receiver.
   delay(5000);
   Heltec.display->clear();
   Heltec.display->drawString(0, 0, "Setup Done!");
@@ -65,23 +66,23 @@ void setup()
   delay(3000);
 }
 
-#define LORA_CHECK_INTERVAL (10000)
+#define LORA_CHECK_INTERVAL (10000)                     // we're limiting the max number of transmissions to reduce errors and to keep from flooding the master with LoRa transmissions.
 
 void loop() {
   
-  static uint32_t next_LoRa_read = 0;                  // don't know if you can still read valuable things...
+  static uint32_t next_LoRa_read = 0;                   // don't know if you can still read valuable things...
 
   uint32_t now = millis();
 
 
-  if(now > next_LoRa_read)                            // now we check quite less. Otherwise the code could also flip / bounce between on and off
+  if(now > next_LoRa_read)                              // now we check quite less. Otherwise the code could also flip / bounce between on and off
   {                                     
-                                                      // Idea for improvement:
-                                                      // another idea is to have a "counter" which increments on darkness and decrements when there is light
-                                                      // this could deboucne and the check intervall could be shorter... it would saturate at 0 (during the day)
-                                                      // and a certain value (which is the used below to perform the tasks) like 40....
-                                                      // if the increment is e.g. 2 and the decrement is e.g. 1 then you could also react quicker on darkness while
-                                                      // it will be slower to got to OFF mode.
+                                                        // Idea for improvement:
+                                                        // another idea is to have a "counter" which increments on darkness and decrements when there is light
+                                                        // this could deboucne and the check intervall could be shorter... it would saturate at 0 (during the day)
+                                                        // and a certain value (which is the used below to perform the tasks) like 40....
+                                                        // if the increment is e.g. 2 and the decrement is e.g. 1 then you could also react quicker on darkness while
+                                                        // it will be slower to got to OFF mode.
     canBroadcast = true;
     Heltec.display->drawString(0, 20, "Can Broadcast");
     Serial.println("canBroadcast");
@@ -93,7 +94,7 @@ void loop() {
   mySensor.add(currentSensorValue);
   smoothed = mySensor.get();
   Serial.println(smoothed);
-  if((smoothed > 0) && (smoothed < 600) && (millis()>next_LoRa_read)){       // if in the range of 0.1 ft to 6 ft
+  if((smoothed > 0) && (smoothed < 600) && (millis()>next_LoRa_read)){       // if in the range of 0.1 ft to ~5 feet
       Serial.println("Triggered");
       Heltec.display->clear();
       Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
@@ -103,7 +104,6 @@ void loop() {
       Heltec.display->drawString(90, 0, String(counter));
       Heltec.display->drawString(0, 20, "Motion ");
       Heltec.display->drawString(60, 20, String(smoothed));
-      Serial.println("Sending Packet...");
       Heltec.display->display();
       Heltec.LoRa.beginPacket();
       Heltec.LoRa.print("motion");
@@ -115,4 +115,5 @@ void loop() {
       peopleSeen ++;
       next_LoRa_read = millis() + LORA_CHECK_INTERVAL;
    }
+   delay(1);                                             // to try to prevent flooding the ADC line with Ultrasonic readings
 }
