@@ -1,25 +1,24 @@
 /* Welcome! Chances are, if you found this - it means I did something wrong.
  * Who knew that a light up bridge could be so complicated? On a surface level,
- * this code takes signals from a Maxbotix XL 7070 ultrasonic sensor either on
- * ESP32 master (the code this specific code is running on) or from the ESP32 
- * slave device, via LoRa. Once a significant change has been "seen", we cycle
- * through several stages, from fading into a random effect, then fading to 
- * solid white, and finally back to off. The code also has a provision to only
- * run from dusk to dawn, via a photocell. If the photocell does NOT detect
+ * this code takes analog signals from a Maxbotix XL 7070 ultrasonic sensor either 
+ * on this ESP32 master (the code this specific code is running on) or from the ESP32 
+ * slave device at the other end of the bridge, via LoRa. Once a significant change 
+ * has been "seen", we cycle through several stages, from fading into a random effect, 
+ * then fading to solid white, and finally back to off. The code also has a provision 
+ * to only run from dusk to dawn, via a photocell. If the photocell does NOT detect
  * light, it turns ON a 3.3V circuit, which pulls pin 23 HIGH. Otherwise, pin
  * 23 is LOW, which sends a command to turn off the LEDs and ignores any 
  * sensor input. This code was written by Hagan Walker (haganwalker@gmail.com)
- * with support from users over at the WS2812FX github repository and Landon Casey. A big thanks
- * to them, along with the creators and contributors of the NeoPixelBus library.
+ * with support from users over at the WS2812FX github repository and Landon Casey. 
+ * A big thanks to them, along with the creators and contributors of the
+ * NeoPixelBus library.
  * 
  * Now - here's the sloppy code for the Glo(R) Bridge.
  *
- *
  * Toby: I tried to change things to the better
- * But I do not have any ot the hardware so I did all of this in a text editor without even compiling or checking
- * I suspect it to fail in the fisrt place but it should give you an idea.
- * Let me know if it works or why not... :-)
- *
+ * But I do not have any ot the hardware so I did all of this in a text editor 
+ * without even compiling or checking I suspect it to fail in the fisrt place 
+ * but it should give you an idea. Let me know if it works or why not... :-)
  */
 
 #include "Arduino.h"
@@ -36,11 +35,8 @@ String packet ;
 unsigned int counter = 0;
 unsigned int peopleSeen = 0;
 float smoothed = 0;
-float cm = 0;
-float smoothedInches = 0;
 
 Smoothed <int> mySensor;
-
 
 #define LED_COUNT 1265
 #define LED_PIN 17  //DO NOT CHANGE THIS
@@ -57,8 +53,20 @@ int nightTime = 0;
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 WS2812FX ws2812fx = WS2812FX(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+
+/* We're using the DMA method to get MAX speed from the ESP32, so we're "piping" data
+ * to the NeoPixelBus library. We'll also use the same LED_COUNT and LED_PIN variables
+ * in the declaration below. This is copied to the NeoPixelBus instance by the
+ * "MyCustomShow" instance/function that is at the very bottom of the code. 
+ */
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(LED_COUNT, LED_PIN);
 
+// Let's do a small function to choose a random color
+uint32_t colors[] = {RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA, PURPLE, ORANGE, PINK};
+const uint8_t myColors = (sizeof(colors)/sizeof(colors[0]));
+
+// Now, let's start the setup. We need to initialize the Heltec screen, LoRa, and Serial Data.
+// We then will initialize the ws2812fx library with default options.
 void setup() {
   Heltec.begin(true /*DisplayEnable Enable*/, true /*Heltec.LoRa Disable*/, true /*Serial Enable*/, true /*PABOOST Enable*/, BAND /*long BAND*/);
   Heltec.display->flipScreenVertically();
@@ -74,6 +82,7 @@ void setup() {
   strip.Show();
   ws2812fx.setCustomShow(myCustomShow);
   ws2812fx.setBrightness(255);
+  ws2812fx.setColor(random(myColors));
   ws2812fx.setMode(FX_MODE_STATIC);
   ws2812fx.setSpeed(500);  //smaller numbers are faster
   ws2812fx.start();
@@ -166,6 +175,7 @@ const uint8_t myModes[] = {
 //    FX_MODE_ICU                     
 };
 const uint8_t myModeCount = (sizeof(myModes)/sizeof(myModes[0]));
+
 /*
  * To change time of the events, edit the numbers below that AREN'T 255. This will change the timeline in MS.
  * To adjust max brightness, scroll down to the FADE_IN and FADE_WHITE stages and look for BRIGHTNESS comments.
@@ -173,22 +183,23 @@ const uint8_t myModeCount = (sizeof(myModes)/sizeof(myModes[0]));
  * as the LED's will reach max brightness sooner, and move on to the next line of code. To compensate, you can
  * simply adjust the time in MS here to be longer.
  */
+ 
 #define FADE_IN_TIMESTEP    (6000/255)                                          // replace the first number to adjust fade time in milliseconds.
                                                                                 // no matter if we fade colors or brightness. 
                                                                                 // There are 255 values to be done in the milliseconds given
 #define FADE_WHITE_TIMESTEP (15000/255)  
 #define FADE_OUT_TIMESTEP   (4000/255)
 #define ANIM_TIME           (7500)                                              // how long to have the effect running
-#define LIGHT_ON_TIME       (15000)                                              // how long to have white light on for (15 sec)
+#define LIGHT_ON_TIME       (15000)                                             // how long to have white light on for (15 sec)
 
 
-#define NIGHT_TIME_CHECK_INT (10000)   											// one minute is probably sufficient - daylight does usually not change quickly
-																				// .... You might miss the one pointing a flashlight to the sensor....
-																				// ... set it to a low value for DEBUG....
+#define NIGHT_TIME_CHECK_INT (10000)   											                    // one minute is probably sufficient - daylight does usually not change quickly
+																				                                        // .... You might miss the one pointing a flashlight to the sensor....
+																				                                        // ... set it to a low value for DEBUG....
 																				
-#define ULTRASONIC_CHECK_INTERVAL (10)											// 100 ms checking makes 10 checks per second
-																				// one would need to pass within 100 to 200 ms to get uncaught
-																				// and apparently the sensor updates with 10Hz anyway...
+#define ULTRASONIC_CHECK_INTERVAL (10)											                    // 100 ms checking makes 10 checks per second
+																				                                        // one would need to pass within 100 to 200 ms to get uncaught
+																				                                        // and apparently the sensor updates with 10Hz anyway...
 																				
 																				
 																				
@@ -207,8 +218,8 @@ void loop() {
 	
   	// there are probably simpler ways than using many uint32_t timing variables. 
   	// anyway, I hope memory does not become a problem on these devices
-  	static uint32_t next_night_check = 0;										// checking if it is night time....
-  	static uint32_t next_ultrasonic_read = 0;									// don't know if you can still read valuable things...
+  	static uint32_t next_night_check = 0;										                    // checking if it is night time....
+  	static uint32_t next_ultrasonic_read = 0;									                  // don't know if you can still read valuable things...
 
     uint32_t now = millis();                                                    // gets the current time at every call
 
@@ -217,22 +228,24 @@ void loop() {
     if(anim_running) ws2812fx.service();                                        // during animation we use the libraries service routine for the modes
     else ws2812fx.show();                                                       // for the fading we just use show to draw the pixels
     
-	if(now > next_night_check)													// now we check quite less. Otherwise the code could also flip / bounce between on and off
+	if(now > next_night_check)													                          // now we check quite less. Otherwise the code could also flip / bounce between on and off
 	{																			
-																				// Idea for improvement:
-																				// another idea is to have a "counter" which increments on darkness and decrements when there is light
-																				// this could deboucne and the check intervall could be shorter... it would saturate at 0 (during the day)
-																				// and a certain value (which is the used below to perform the tasks) like 40....
-																				// if the increment is e.g. 2 and the decrement is e.g. 1 then you could also react quicker on darkness while
-																				// it will be slower to got to OFF mode.
+																				                                        // Idea for improvement:
+																				                                        // another idea is to have a "counter" which increments on darkness and decrements when there is light
+																				                                        // this could deboucne and the check intervall could be shorter... it would saturate at 0 (during the day)
+																				                                        // and a certain value (which is the used below to perform the tasks) like 40....
+																				                                        // if the increment is e.g. 2 and the decrement is e.g. 1 then you could also react quicker on darkness while
+																				                                        // it will be slower to got to OFF mode.
 		next_night_check = now + NIGHT_TIME_CHECK_INT;
 		nightTime = digitalRead(photoResistor);
 	}
 
- /*  
-  *  MAIN CODE: This starts the main code. First, we check if it is night time. If it is (state is HIGH or 1), 
-  *  then we check the sensor. If the sensor is high, and the motion is new, we start the animation.
-  */
+/*  
+ *  MAIN CODE: This starts the main code. First, we check if it is night time. If it is (state is HIGH or 1), 
+ *  then we check the ultrasonic. If the sensor detects motion within the threshold, and the motion is new, 
+ *  we start the animation. Otherwise, we will find ourselves into (or headed to) the default case, which
+ *  is to be "OFF".
+*/
   if(now > next_ultrasonic_read) {
 	next_ultrasonic_read = now + ULTRASONIC_CHECK_INTERVAL;   // doing this here instead of the end provides a more stable interval...
     
@@ -241,29 +254,30 @@ void loop() {
       int16_t currentSensorValue = analogRead(36) & 0xFE0;
       mySensor.add(currentSensorValue);
       smoothed = mySensor.get();
-      Serial.println(smoothed);
+      //Serial.println(smoothed);
       
-		  if(smoothed > 0 && smoothed < 700){                                   // Roughly 0 to 4ft.
-			if(new_motion_detected == false) {                                    // when this is a new motion
-				new_motion_detected = true;                                       // we have motion detected
+		  if(smoothed > 0 && smoothed < 650){                                         // Roughly 0 to ~5ft.
+			if(new_motion_detected == false) {                                          // when this is a new motion
+				new_motion_detected = true;                                               // we have motion detected
+				ws2812fx.setColor(random(myColors));                                      // choose a random color
 				ws2812fx.setMode(random(myModeCount));                                    // set a random mode from the ones above 
-				ws2812fx.setBrightness(0);                                        // start at zero brigthness
+				ws2812fx.setBrightness(0);                                                // start at zero brigthness
 				//Serial.println("Motion MAIN");  
 				Heltec.display->drawString(0, 20, "Motion MAIN");
-				Heltec.display->display();
-				//Serial.print("mode is "); Serial.println(ws2812fx.getModeName(ws2812fx.getMode()));
+				Heltec.display->drawString(0, 40, ws2812fx.getModeName(ws2812fx.getMode()));
+        Heltec.display->display();
 
 				// now we switch to the first stage:
 				stage = FADE_IN;
 				fade_step = now + FADE_IN_TIMESTEP;
 				anim_running = true;
 			}
-			else {                                                                 // We have motion, but not new motion. Keep going.
-				on_end = now + LIGHT_ON_TIME;                                      // Sensor still triggered --> extend to further ... seconds
+			else {                                                                      // We have motion, but not new motion. Keep going.
+				on_end = now + LIGHT_ON_TIME;                                             // Sensor still triggered --> extend to further ... seconds
 				//Serial.println("Retriggered MAIN");
 				Heltec.display->drawString(0, 20, "Retriggered MAIN");
 				Heltec.display->display();
-				if(stage == FADE_OUT) {                                              // hurry, we were fading out already.... lets return to fade white
+				if(stage == FADE_OUT) {                                                   // hurry, we were fading out already.... lets return to fade white
 					stage = FADE_WHITE;
 					fade_step = now + FADE_WHITE_TIMESTEP;
 					fade_amount = 0;
@@ -273,27 +287,28 @@ void loop() {
 
 
 	  
-	  // don't know how often LoRa sends.... in Europe in most commercial devices using the 868 MHz this is limited (by law) with a duty cycle of 1% per hour.
-	  // so a device is allowed to send 36 seconds per hour.
+	   // don't know how often LoRa sends.... in Europe in most commercial devices using the 868 MHz this is limited (by law) with a duty cycle of 1% per hour.
+	   // so a device is allowed to send 36 seconds per hour.
 	  
-	  // so it may be worth thinking about limiting the transmissions from the slave....
+	   // so it may be worth thinking about limiting the transmissions from the slave....
 	  
 	  int packetSize = Heltec.LoRa.parsePacket();
 
-      // If the motion is detected by the Slave Device and sent by LoRa (Right Side of the Bridge)
+     // If the motion is detected by the Slave Device and sent by LoRa (Right Side of the Bridge)
       
       if (packetSize) {
         cbk(packetSize);                          
-          if(new_motion_detected == false) {                                    // when this is a new motion
-              new_motion_detected = true;                                       // we have motion detected
-              ws2812fx.setOptions(0, REVERSE);                                  // reverse the direction if coming from LoRa.
-              ws2812fx.setMode(random(myModeCount));                                    // set a random mode, 
+          if(new_motion_detected == false) {                                      // when this is a new motion
+              new_motion_detected = true;                                         // we have motion detected
+              ws2812fx.setOptions(0, REVERSE);                                    // reverse the direction if coming from LoRa.
+              ws2812fx.setColor(random(myColors));                                // set a random color
+              ws2812fx.setMode(random(myModeCount));                              // set a random mode
               ws2812fx.setBrightness(0);
               //Serial.println("Motion LoRa");  
               Heltec.display->drawString(0, 20, "Motion LoRa");
               Heltec.display->drawString(0, 40, rssi);
+              Heltec.display->drawString(0, 60, ws2812fx.getModeName(ws2812fx.getMode()));
               Heltec.display->display();
-              //Serial.print("mode is "); Serial.println(ws2812fx.getModeName(ws2812fx.getMode()));
   
               // now we switch to the first stage:
               stage = FADE_IN;
@@ -302,12 +317,12 @@ void loop() {
           }
           else {                                                                 // We have motion, but not new motion. Keep going.
           
-              on_end = now + LIGHT_ON_TIME;                                     // Sensor still triggered --> extend to further ... seconds
+              on_end = now + LIGHT_ON_TIME;                                      // Sensor still triggered --> extend to further ... seconds
               //Serial.println("Retriggered, LoRa");
               Heltec.display->drawString(0, 20, "Retrig, LoRa");
               Heltec.display->drawString(0, 40, rssi);
               Heltec.display->display();
-              if(stage == FADE_OUT) {                                             // hurry, we were fading out already.... lets return to fade white
+              if(stage == FADE_OUT) {                                            // hurry, we were fading out already.... lets return to fade white
                   stage = FADE_WHITE;
                   fade_step = now + FADE_WHITE_TIMESTEP;
                   fade_amount = 0;
@@ -316,18 +331,18 @@ void loop() {
         }
     }
 
-    // It's daytime outside. We're not going to do anything but say so on the OLED.
+  // It's daytime outside. We're not going to do anything but say so on the OLED.
     
 	
 	// this is going to happen too often.... the if - else calls either the one or the other.
-	// here you do nothing...
+  // here you do nothing...
 	
     else {
-	  // I would not do anything...
-	  // let the last animation run to the end when the last one crosed during dawn...
-      // ws2812fx.setBrightness(0);
-      // stage == OFF;
-      //Serial.println("It's Daytime!");
+	// I would not do anything...
+	// let the last animation run to the end when the last one crosed during dawn...
+  // ws2812fx.setBrightness(0);
+  // stage == OFF;
+  //Serial.println("It's Daytime!");
       Heltec.display->drawString(0, 40, "It's Daytime!");
       Heltec.display->display();
     }
@@ -424,10 +439,10 @@ void loop() {
             Heltec.display->display();
             if(now > fade_step)
             {
-                fade_step = now + FADE_OUT_TIMESTEP;                             // next step
+                fade_step = now + FADE_OUT_TIMESTEP;                                // next step
                 if(brightness > 0)
                 {
-                    ws2812fx.setBrightness(brightness - 1);                      // we dim, as long as > 0
+                    ws2812fx.setBrightness(brightness - 1);                         // we dim, as long as > 0
                 }
                 else
                 {
@@ -436,16 +451,21 @@ void loop() {
                 }
             }    
         break;
-        default :                                                               // every switch - case should have a default
+        default :                                                                   // every switch - case should have a default
             //Serial.println("We're in the DEFAULT case");
             stage = OFF;
         break;
     }
 
-    Heltec.display->clear();                                                    // Let's clear the display
+    Heltec.display->clear();                                                        // Let's clear the display
 }
 
-
+/*
+ * This function is very important. This is the code that processes the LoRa packets
+ * from the "satelite" side of the bridge. The packets only get sent if they are in the
+ * correct threshold, but without the code below, the "satelite" ESP32 will not trigger
+ * the code above.
+ */
 void cbk(int packetSize) {
   packet ="";
   packSize = String(packetSize,DEC);
@@ -461,7 +481,7 @@ void cbk(int packetSize) {
 }
 
 /*
- * This is very important code. It takes the WS2812FX library and "pipes" it to the
+ * This function is very important. It takes the WS2812FX library and "pipes" it to the
  * NeoPixelBus library. NeoPixelBus implements hardware-level code for the WS2812B
  * LED driver, meaning this can output any lighting effect as quickly as possible.
  * Without this code, nothing else will work.
