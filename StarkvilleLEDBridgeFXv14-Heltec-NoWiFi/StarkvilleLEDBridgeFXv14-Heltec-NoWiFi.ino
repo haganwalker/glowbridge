@@ -68,10 +68,6 @@ WS2812FX ws2812fx = WS2812FX(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
  */
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(LED_COUNT, LED_PIN);
 
-// Let's do a small function to choose a random color
-uint32_t colors[] = {RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA, PURPLE, ORANGE, PINK};
-const uint8_t myColors = (sizeof(colors)/sizeof(colors[0]));
-
 // Now, let's start the setup. We need to initialize the Heltec screen, LoRa, and Serial Data.
 // We then will initialize the ws2812fx library with default options.
 void setup() {
@@ -91,7 +87,6 @@ void setup() {
   strip.Show();
   ws2812fx.setCustomShow(myCustomShow);
   ws2812fx.setBrightness(255);
-  ws2812fx.setColor(random(myColors));
   ws2812fx.setMode(FX_MODE_STATIC);
   ws2812fx.setSpeed(500);  //smaller numbers are faster
   ws2812fx.start();
@@ -131,29 +126,29 @@ typedef enum stages{
 
 // might be "bridge friendly" effects
 const uint8_t myModes[] = {
-//    FX_MODE_STATIC                  ,
+    FX_MODE_STATIC                  ,
 //    FX_MODE_BLINK                   ,
 //    FX_MODE_BREATH                  ,
     FX_MODE_COLOR_WIPE              ,
 //    FX_MODE_COLOR_WIPE_INV          ,
 //    FX_MODE_COLOR_WIPE_REV          ,
 //    FX_MODE_COLOR_WIPE_REV_INV      ,
-//    FX_MODE_COLOR_WIPE_RANDOM       ,
+    FX_MODE_COLOR_WIPE_RANDOM       ,
     FX_MODE_RANDOM_COLOR            ,
     FX_MODE_SINGLE_DYNAMIC          ,
     FX_MODE_MULTI_DYNAMIC           ,
     FX_MODE_RAINBOW                 ,
     FX_MODE_RAINBOW_CYCLE           ,
-//    FX_MODE_SCAN                    ,
+    FX_MODE_SCAN                    ,
 //    FX_MODE_DUAL_SCAN               ,
 //    FX_MODE_FADE                    ,
     FX_MODE_THEATER_CHASE           ,
     FX_MODE_THEATER_CHASE_RAINBOW   ,
     FX_MODE_RUNNING_LIGHTS          ,
 //    FX_MODE_TWINKLE                 ,
-//    FX_MODE_TWINKLE_RANDOM          ,
+    FX_MODE_TWINKLE_RANDOM          ,
 //    FX_MODE_TWINKLE_FADE            ,
-//    FX_MODE_TWINKLE_FADE_RANDOM     ,
+    FX_MODE_TWINKLE_FADE_RANDOM     ,
 //    FX_MODE_SPARKLE                 ,
 //    FX_MODE_FLASH_SPARKLE           ,
 //    FX_MODE_HYPER_SPARKLE           ,
@@ -161,27 +156,27 @@ const uint8_t myModes[] = {
 //    FX_MODE_STROBE_RAINBOW          ,
 //    FX_MODE_MULTI_STROBE            ,
 //    FX_MODE_BLINK_RAINBOW           ,
-//    FX_MODE_CHASE_WHITE             ,
+    FX_MODE_CHASE_WHITE             ,
     FX_MODE_CHASE_COLOR             ,
     FX_MODE_CHASE_RANDOM            ,
     FX_MODE_CHASE_RAINBOW           ,
 //   FX_MODE_CHASE_FLASH             ,
 //    FX_MODE_CHASE_FLASH_RANDOM      ,
-//    FX_MODE_CHASE_RAINBOW_WHITE     ,
+    FX_MODE_CHASE_RAINBOW_WHITE     ,
     FX_MODE_CHASE_BLACKOUT          ,
     FX_MODE_CHASE_BLACKOUT_RAINBOW  ,
-//    FX_MODE_COLOR_SWEEP_RANDOM      ,
+    FX_MODE_COLOR_SWEEP_RANDOM      ,
     FX_MODE_RUNNING_COLOR           ,
 //    FX_MODE_RUNNING_RED_BLUE        ,
     FX_MODE_RUNNING_RANDOM          ,
     FX_MODE_LARSON_SCANNER          ,
 //    FX_MODE_COMET                   ,
 //    FX_MODE_FIREWORKS               ,
-//    FX_MODE_FIREWORKS_RANDOM        ,
-    FX_MODE_MERRY_CHRISTMAS         ,
+    FX_MODE_FIREWORKS_RANDOM        ,
+//    FX_MODE_MERRY_CHRISTMAS         ,
 //    FX_MODE_FIRE_FLICKER            ,
-    FX_MODE_FIRE_FLICKER_SOFT       ,
-//    FX_MODE_FIRE_FLICKER_INTENSE    ,
+//    FX_MODE_FIRE_FLICKER_SOFT       ,
+    FX_MODE_FIRE_FLICKER_INTENSE    ,
 //    FX_MODE_CIRCUS_COMBUSTUS        ,
 //    FX_MODE_HALLOWEEN               ,
     FX_MODE_BICOLOR_CHASE           ,
@@ -189,6 +184,9 @@ const uint8_t myModes[] = {
 //    FX_MODE_ICU                     
 };
 const uint8_t myModeCount = (sizeof(myModes)/sizeof(myModes[0]));
+
+// Let's do a small function to choose a random color
+uint32_t color[] = {RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA, PURPLE, ORANGE, PINK};
 
 /*
  * To change time of the events, edit the numbers below that AREN'T 255. This will change the timeline in MS.
@@ -263,7 +261,7 @@ void loop() {
   if(now > next_ultrasonic_read) {
 	next_ultrasonic_read = now + ULTRASONIC_CHECK_INTERVAL;   // doing this here instead of the end provides a more stable interval...
     
-	if(nightTime == HIGH) {  // this should normally be HIGH. Can change to LOW for quick debugging.
+	if(nightTime == LOW) {  // this should normally be HIGH. Can change to LOW for quick debugging.
       
       int16_t currentSensorValue = analogRead(36) & 0xFE0;
       mySensor.add(currentSensorValue);
@@ -273,7 +271,7 @@ void loop() {
 		  if(smoothed > 0 && smoothed < 600){                                         // Roughly 0 to ~5ft.
 			if(new_motion_detected == false) {                                          // when this is a new motion
 				new_motion_detected = true;                                               // we have motion detected
-				//ws2812fx.setColor(random(myColors));                                    // choose a random color
+			  ws2812fx.setColor(color[random(0,8)]);                                    // choose a random color
 				ws2812fx.setMode(random(myModeCount));                                    // set a random mode from the ones above 
 				ws2812fx.setBrightness(0);                                                // start at zero brigthness
 				//Serial.println("Motion MAIN");  
@@ -314,7 +312,7 @@ void loop() {
           if(new_motion_detected == false) {                                      // when this is a new motion
               new_motion_detected = true;                                         // we have motion detected
               ws2812fx.setOptions(0, REVERSE);                                    // reverse the direction if coming from LoRa.
-              //ws2812fx.setColor(random(myColors));                              // set a random color
+              ws2812fx.setColor(color[random(0,8)]);                              // set a random color
               ws2812fx.setMode(random(myModeCount));                              // set a random mode
               ws2812fx.setBrightness(0);
               //Serial.println("Motion LoRa");  
