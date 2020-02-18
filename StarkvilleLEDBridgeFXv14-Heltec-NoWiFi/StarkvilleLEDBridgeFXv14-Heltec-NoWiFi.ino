@@ -261,7 +261,7 @@ void loop() {
   if(now > next_ultrasonic_read) {
 	next_ultrasonic_read = now + ULTRASONIC_CHECK_INTERVAL;   // doing this here instead of the end provides a more stable interval...
     
-	if(nightTime == LOW) {  // this should normally be HIGH. Can change to LOW for quick debugging.
+	if(nightTime == HIGH) {  // this should normally be HIGH. Can change to LOW for quick debugging.
       
       int16_t currentSensorValue = analogRead(36) & 0xFE0;
       mySensor.add(currentSensorValue);
