@@ -85,17 +85,17 @@ void loop() {
                                                         // it will be slower to got to OFF mode.
     canBroadcast = true;
     Heltec.display->drawString(0, 20, "Can Broadcast");
-    Serial.println("canBroadcast");
+    //Serial.println("canBroadcast");
     Heltec.display->display();
   }
   
   Heltec.display->clear();
-  float currentSensorValue = analogRead(36);
+  float currentSensorValue = analogRead(37);            // changed to 37 (should have been pin 36 but Landon made a booboo)
   mySensor.add(currentSensorValue);
   smoothed = mySensor.get();
   Serial.println(smoothed);
   if((smoothed > 0) && (smoothed < 600) && (millis()>next_LoRa_read)){       // if in the range of 0.1 ft to ~5 feet
-      Serial.println("Triggered");
+      //Serial.println("Triggered");
       Heltec.display->clear();
       Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
       Heltec.display->setFont(ArialMT_Plain_16);
@@ -109,11 +109,11 @@ void loop() {
       Heltec.LoRa.print("motion");
       Heltec.LoRa.print(counter);
       Heltec.LoRa.endPacket(); 
-      Serial.println("Packet Sent");
+      //Serial.println("Packet Sent");
       canBroadcast = false;
       counter++;  
       peopleSeen ++;
       next_LoRa_read = millis() + LORA_CHECK_INTERVAL;
    }
-   delay(1);                                             // to try to prevent flooding the ADC line with Ultrasonic readings
+   delay(10);                                             // to try to prevent flooding the ADC line with Ultrasonic readings
 }

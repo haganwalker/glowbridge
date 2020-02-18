@@ -273,7 +273,7 @@ void loop() {
 		  if(smoothed > 0 && smoothed < 600){                                         // Roughly 0 to ~5ft.
 			if(new_motion_detected == false) {                                          // when this is a new motion
 				new_motion_detected = true;                                               // we have motion detected
-				ws2812fx.setColor(random(myColors));                                      // choose a random color
+				//ws2812fx.setColor(random(myColors));                                    // choose a random color
 				ws2812fx.setMode(random(myModeCount));                                    // set a random mode from the ones above 
 				ws2812fx.setBrightness(0);                                                // start at zero brigthness
 				//Serial.println("Motion MAIN");  
@@ -303,7 +303,6 @@ void loop() {
 	  
 	   // don't know how often LoRa sends.... in Europe in most commercial devices using the 868 MHz this is limited (by law) with a duty cycle of 1% per hour.
 	   // so a device is allowed to send 36 seconds per hour.
-	  
 	   // so it may be worth thinking about limiting the transmissions from the slave....
 	  
 	  int packetSize = Heltec.LoRa.parsePacket();
@@ -315,7 +314,7 @@ void loop() {
           if(new_motion_detected == false) {                                      // when this is a new motion
               new_motion_detected = true;                                         // we have motion detected
               ws2812fx.setOptions(0, REVERSE);                                    // reverse the direction if coming from LoRa.
-              ws2812fx.setColor(random(myColors));                                // set a random color
+              //ws2812fx.setColor(random(myColors));                              // set a random color
               ws2812fx.setMode(random(myModeCount));                              // set a random mode
               ws2812fx.setBrightness(0);
               //Serial.println("Motion LoRa");  
